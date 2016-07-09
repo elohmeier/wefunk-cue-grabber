@@ -13,6 +13,7 @@ from lxml import html
 from datetime import datetime, timedelta
 import re
 import json
+import shutil
 
 WEFUNK_SHOW_BASE_URL = 'http://www.wefunkradio.com/show/'
 
@@ -69,14 +70,22 @@ class Client:
         return trackList
     
     
-    def CreateCueSheet(self, show):
+    def CreateCueSheet(self, show, filename):
         tracks = self.ExtractTrackList(show)
-        cue = CueSheet("HipHop", show.showDate.strftime('%Y'), "WEFUNK RADIO", "WEFUNK SHOW #" + show.showNumber, show.getMp3LqFilename())
+        cue = CueSheet("HipHop", show.showDate.strftime('%Y'), "WEFUNK RADIO", "WEFUNK SHOW #" + show.showNumber, filename)
         
         for track in tracks:
             cue.addTrack(track)
     
         return cue
+
+    
+    def DownloadHqTorrent(self, show, output_directory):
+        torrentFilename = show.getFilenameBase() + "_hq.mp3.torrent"
+        with urllib.request.urlopen("http://www.wefunkradio.com/torrent/" + torrentFilename) as response, open(output_directory + '/' + torrentFilename, 'wb') as out_file:
+            shutil.copyfileobj(response, out_file)
+    
+    
 
 
 
@@ -93,9 +102,15 @@ class ShowInfo:
     def __init__(self, showNumber, showDate):
         self.showNumber = showNumber
         self.showDate = showDate
+        
+    def getFilenameBase(self):
+        return 'WeFunk_Show_' + self.showNumber + '_' + self.showDate.strftime('%Y-%m-%d')
 
     def getMp3LqFilename(self):
-        return 'WeFunk_Show_' + self.showNumber + '_' + self.showDate.strftime('%Y-%m-%d') + '.mp3'
+        return self.getFilenameBase() + '.mp3'
+
+    def getMp3HqFilename(self):
+        return self.getFilenameBase() + '_hq.mp3'
 
     def getShowUrl(self):
         return WEFUNK_SHOW_BASE_URL + self.showDate.strftime('%Y-%m-%d')
@@ -166,9 +181,13 @@ print("found {0} shows on page!".format(len(shows)))
 print("saving cue sheets to " + args.output_dir)
 
 for show in shows:
-    cue = client.CreateCueSheet(show)
-    cue.saveToFile(os.path.join(args.output_dir, show.getMp3LqFilename().replace('.mp3', '.cue')))
-    print('created cue-sheet for #' + show.showNumber)
+    cue_lq = client.CreateCueSheet(show, show.getMp3LqFilename())
+    cue_lq.saveToFile(os.path.join(args.output_dir, show.getMp3LqFilename().replace('.mp3', '.cue')))
+    
+    cue_hq = client.CreateCueSheet(show, show.getMp3HqFilename())
+    cue_hq.saveToFile(os.path.join(args.output_dir, show.getMp3HqFilename().replace('.mp3', '.cue')))
+    print('created cue-sheets for #' + show.showNumber)
+    client.DownloadHqTorrent(show, args.output_dir)
 
 
 print("finished")
