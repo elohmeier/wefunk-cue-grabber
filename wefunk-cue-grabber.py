@@ -82,7 +82,9 @@ class Client:
     
     def DownloadHqTorrent(self, show, output_directory):
         torrentFilename = show.getFilenameBase() + "_hq.mp3.torrent"
-        with urllib.request.urlopen("http://www.wefunkradio.com/torrent/" + torrentFilename) as response, open(output_directory + '/' + torrentFilename, 'wb') as out_file:
+        torrent_url = "http://www.wefunkradio.com/torrent/" + torrentFilename
+        print('Downloading %s' % torrent_url)
+        with urllib.request.urlopen(torrent_url) as response, open(output_directory + '/' + torrentFilename, 'wb') as out_file:
             shutil.copyfileobj(response, out_file)
     
     
@@ -104,7 +106,7 @@ class ShowInfo:
         self.showDate = showDate
         
     def getFilenameBase(self):
-        return 'WeFunk_Show_' + self.showNumber + '_' + self.showDate.strftime('%Y-%m-%d')
+        return 'WEFUNK_Show_' + self.showNumber + '_' + self.showDate.strftime('%Y-%m-%d')
 
     def getMp3LqFilename(self):
         return self.getFilenameBase() + '.mp3'
